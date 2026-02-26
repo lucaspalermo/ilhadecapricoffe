@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// OPERADOR (funcionario que usa o PDV)
+// =============================================
+model Operador {
+  id     Int     @id @default(autoincrement())
+  nome   String
+  pin    String  // hash do PIN de 4 digitos
+  ativo  Boolean @default(true)
+
+  caixas Caixa[]
+  vendas Venda[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("operadores")
+}
+
+// =============================================
+// CATEGORIA de produtos (Cafes, Lanches, etc)
+// =============================================
+model Categoria {
+  id     Int     @id @default(autoincrement())
+  nome   String
+  ordem  Int     @default(0)
+  ativo  Boolean @default(true)
+
+  produtos Produto[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categorias")
+}
+
+// =============================================
+// PRODUTO
+// =============================================
+model Produto {
+  id          Int     @id @default(autoincrement())
+  nome        String
+  descricao   String?
+  preco       Float
+  imagem      String?
+  ativo       Boolean @default(true)
+
+  categoriaId Int
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+
+  itensVenda ItemVenda[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("produtos")
+}
+
+// =============================================
+// CAIXA (abertura e fechamento)
+// =============================================
+model Caixa {
+  id              Int       @id @default(autoincrement())
+  operadorId      Int
+  operador        Operador  @relation(fields: [operadorId], references: [id])
+  valorAbertura   Float
+  valorFechamento Float?
+  dataAbertura    DateTime  @default(now())
+  dataFechamento  DateTime?
+  status          String    @default("ABERTO") // ABERTO | FECHADO
+
+  vendas Venda[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("caixas")
+}
+
+// =============================================
+// VENDA
+// =============================================
+model Venda {
+  id             Int     @id @default(autoincrement())
+  caixaId        Int
+  caixa          Caixa   @relation(fields: [caixaId], references: [id])
+  operadorId     Int
+  operador       Operador @relation(fields: [operadorId], references: [id])
+  total          Float
+  formaPagamento String  // DINHEIRO | PIX | CARTAO_DEBITO | CARTAO_CREDITO
+  origem         String  @default("BALCAO") // BALCAO | IFOOD | KEETA | 99FOOD
+  status         String  @default("FINALIZADA") // FINALIZADA | CANCELADA
+  observacao     String?
+
+  itens           ItemVenda[]
+  pedidoDelivery  PedidoDelivery?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("vendas")
+}
+
+// =============================================
+// ITEM DA VENDA
+// =============================================
+model ItemVenda {
+  id            Int     @id @default(autoincrement())
+  vendaId       Int
+  venda         Venda   @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+  produtoId     Int
+  produto       Produto @relation(fields: [produtoId], references: [id])
+  quantidade    Int
+  precoUnitario Float
+  subtotal      Float
+
+  @@map("itens_venda")
+}
+
+// =============================================
+// PEDIDO DE DELIVERY (iFood, Keeta, 99Food)
+// =============================================
+model PedidoDelivery {
+  id              Int     @id @default(autoincrement())
+  plataforma      String  // IFOOD | KEETA | 99FOOD
+  pedidoExternoId String  @unique
+  dados           Json    // dados do pedido externo
+  status          String  @default("NOVO") // NOVO | ACEITO | EM_PREPARO | PRONTO | CANCELADO
+
+  vendaId Int?   @unique
+  venda   Venda? @relation(fields: [vendaId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pedidos_delivery")
+}
