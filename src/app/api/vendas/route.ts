@@ -98,6 +98,23 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Deduzir estoque de cada produto vendido
+      for (const item of itens as { produtoId: number; quantidade: number }[]) {
+        await tx.produto.update({
+          where: { id: item.produtoId },
+          data: { estoque: { decrement: item.quantidade } },
+        });
+
+        await tx.movimentacaoEstoque.create({
+          data: {
+            produtoId: item.produtoId,
+            tipo: "SAIDA",
+            quantidade: item.quantidade,
+            observacao: `Venda #${novaVenda.id}`,
+          },
+        });
+      }
+
       return novaVenda;
     });
 

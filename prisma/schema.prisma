@@ -52,11 +52,13 @@ model Produto {
   preco       Float
   imagem      String?
   ativo       Boolean @default(true)
+  estoque     Int     @default(0)
 
   categoriaId Int
   categoria   Categoria @relation(fields: [categoriaId], references: [id])
 
-  itensVenda ItemVenda[]
+  itensVenda     ItemVenda[]
+  movimentacoes  MovimentacaoEstoque[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -142,4 +144,52 @@ model PedidoDelivery {
   updatedAt DateTime @updatedAt
 
   @@map("pedidos_delivery")
+}
+
+// =============================================
+// MOVIMENTACAO DE ESTOQUE
+// =============================================
+model MovimentacaoEstoque {
+  id          Int     @id @default(autoincrement())
+  produtoId   Int
+  produto     Produto @relation(fields: [produtoId], references: [id])
+  tipo        String  // ENTRADA | SAIDA
+  quantidade  Int
+  observacao  String?
+
+  createdAt DateTime @default(now())
+
+  @@map("movimentacoes_estoque")
+}
+
+// =============================================
+// CATEGORIA FINANCEIRA (DRE)
+// =============================================
+model CategoriaFinanceira {
+  id    Int    @id @default(autoincrement())
+  nome  String
+  tipo  String // DESPESA | RECEITA
+  ordem Int    @default(0)
+
+  lancamentos Lancamento[]
+
+  @@map("categorias_financeiras")
+}
+
+// =============================================
+// LANCAMENTO FINANCEIRO
+// =============================================
+model Lancamento {
+  id                   Int                @id @default(autoincrement())
+  categoriaFinanceiraId Int
+  categoriaFinanceira  CategoriaFinanceira @relation(fields: [categoriaFinanceiraId], references: [id])
+  descricao            String
+  valor                Float
+  data                 DateTime
+  mesReferencia        Int
+  anoReferencia        Int
+
+  createdAt DateTime @default(now())
+
+  @@map("lancamentos")
 }

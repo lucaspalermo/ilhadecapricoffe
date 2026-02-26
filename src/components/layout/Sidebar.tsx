@@ -10,6 +10,9 @@ import {
   Wallet,
   Upload,
   LogOut,
+  Boxes,
+  DollarSign,
+  BarChart3,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -22,6 +25,9 @@ const navItems = [
   { href: "/pedidos", label: "Delivery", icon: Truck },
   { href: "/produtos", label: "Produtos", icon: Package },
   { href: "/caixa", label: "Caixa", icon: Wallet },
+  { href: "/estoque", label: "Estoque", icon: Boxes },
+  { href: "/financeiro", label: "Financeiro", icon: DollarSign },
+  { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/importar", label: "Importar", icon: Upload },
 ];
 
