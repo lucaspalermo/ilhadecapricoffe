@@ -47,6 +47,7 @@ import {
 interface CategoriaFinanceira {
   id: number;
   nome: string;
+  tipo: "RECEITA" | "DESPESA";
 }
 
 interface Lancamento {
@@ -60,6 +61,7 @@ interface Lancamento {
   categoriaFinanceira: {
     id: number;
     nome: string;
+    tipo: "RECEITA" | "DESPESA";
   };
 }
 
@@ -316,7 +318,13 @@ export default function FinanceiroPage() {
 
   // ── Computed ──
 
-  const totalDespesas = lancamentos.reduce((sum, l) => sum + l.valor, 0);
+  const totalDespesas = lancamentos
+    .filter((l) => l.categoriaFinanceira.tipo === "DESPESA")
+    .reduce((sum, l) => sum + l.valor, 0);
+
+  const totalReceitas = lancamentos
+    .filter((l) => l.categoriaFinanceira.tipo === "RECEITA")
+    .reduce((sum, l) => sum + l.valor, 0);
 
   // ── Render ──
 
@@ -410,7 +418,9 @@ export default function FinanceiroPage() {
             </div>
           ) : lancamentos.length > 0 ? (
             <div className="space-y-3">
-              {lancamentos.map((lanc, index) => (
+              {lancamentos.map((lanc, index) => {
+                const isReceita = lanc.categoriaFinanceira.tipo === "RECEITA";
+                return (
                 <Card
                   key={lanc.id}
                   className="rounded-2xl border-gray-100 shadow-sm hover-lift animate-fade-in-up"
@@ -420,8 +430,10 @@ export default function FinanceiroPage() {
                     <div className="flex items-center justify-between flex-wrap gap-3">
                       {/* Left: info */}
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-red-50 border border-red-200 flex-shrink-0">
-                          <TrendingDown className="w-4 h-4 text-red-600" />
+                        <div className={`flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0 ${isReceita ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+                          {isReceita
+                            ? <TrendingUp className="w-4 h-4 text-green-600" />
+                            : <TrendingDown className="w-4 h-4 text-red-600" />}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -440,8 +452,8 @@ export default function FinanceiroPage() {
 
                       {/* Right: value + actions */}
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="text-lg font-bold text-red-600">
-                          {formatBRL(lanc.valor)}
+                        <span className={`text-lg font-bold ${isReceita ? "text-green-600" : "text-red-600"}`}>
+                          {isReceita ? "+" : "-"}{formatBRL(lanc.valor)}
                         </span>
                         <div className="flex items-center gap-1">
                           <Button
@@ -465,19 +477,30 @@ export default function FinanceiroPage() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );
+              })}
 
-              {/* Total */}
-              <Card className="rounded-2xl border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm">
-                <CardContent className="py-4 px-5">
+              {/* Totais */}
+              <Card className="rounded-2xl border-gray-200 bg-gray-50 shadow-sm">
+                <CardContent className="py-4 px-5 space-y-2">
+                  {totalReceitas > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-green-700">Total de Receitas</span>
+                      <span className="text-lg font-bold text-green-700">+{formatBRL(totalReceitas)}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-amber-800">
-                      Total de Despesas
-                    </span>
-                    <span className="text-xl font-bold text-amber-900">
-                      {formatBRL(totalDespesas)}
-                    </span>
+                    <span className="text-sm font-semibold text-red-700">Total de Despesas</span>
+                    <span className="text-lg font-bold text-red-700">-{formatBRL(totalDespesas)}</span>
                   </div>
+                  {totalReceitas > 0 && (
+                    <div className="flex items-center justify-between border-t border-gray-200 pt-2 mt-2">
+                      <span className="text-sm font-bold text-gray-700">Saldo do Mês</span>
+                      <span className={`text-xl font-bold ${totalReceitas - totalDespesas >= 0 ? "text-green-700" : "text-red-700"}`}>
+                        {formatBRL(totalReceitas - totalDespesas)}
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
