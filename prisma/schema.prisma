@@ -15,6 +15,7 @@ model Operador {
   id     Int     @id @default(autoincrement())
   nome   String
   pin    String  // hash do PIN de 4 digitos
+  perfil String  @default("OPERADOR") // ADMIN | OPERADOR
   ativo  Boolean @default(true)
 
   caixas Caixa[]

@@ -14,21 +14,23 @@ import {
   DollarSign,
   BarChart3,
 } from "lucide-react";
+import type { PerfilOperador } from "@/types";
 
 interface SidebarProps {
   operadorNome: string;
+  perfil: PerfilOperador;
   onLogout: () => void;
 }
 
 const navItems = [
-  { href: "/pdv", label: "PDV", icon: ShoppingCart },
-  { href: "/pedidos", label: "Delivery", icon: Truck },
-  { href: "/produtos", label: "Produtos", icon: Package },
-  { href: "/caixa", label: "Caixa", icon: Wallet },
-  { href: "/estoque", label: "Estoque", icon: Boxes },
-  { href: "/financeiro", label: "Financeiro", icon: DollarSign },
-  { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
-  { href: "/importar", label: "Importar", icon: Upload },
+  { href: "/pdv",        label: "PDV",        icon: ShoppingCart, perfis: ["ADMIN", "OPERADOR"] },
+  { href: "/caixa",      label: "Caixa",      icon: Wallet,       perfis: ["ADMIN", "OPERADOR"] },
+  { href: "/estoque",    label: "Estoque",    icon: Boxes,        perfis: ["ADMIN", "OPERADOR"] },
+  { href: "/pedidos",    label: "Delivery",   icon: Truck,        perfis: ["ADMIN", "OPERADOR"] },
+  { href: "/produtos",   label: "Produtos",   icon: Package,      perfis: ["ADMIN"] },
+  { href: "/financeiro", label: "Financeiro", icon: DollarSign,   perfis: ["ADMIN"] },
+  { href: "/relatorios", label: "Relatórios", icon: BarChart3,    perfis: ["ADMIN"] },
+  { href: "/importar",   label: "Importar",   icon: Upload,       perfis: ["ADMIN"] },
 ];
 
 function getInitials(name: string): string {
@@ -41,8 +43,9 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-export default function Sidebar({ operadorNome, onLogout }: SidebarProps) {
+export default function Sidebar({ operadorNome, perfil, onLogout }: SidebarProps) {
   const pathname = usePathname();
+  const itensVisiveis = navItems.filter((item) => item.perfis.includes(perfil));
 
   return (
     <aside className="flex h-screen w-[72px] flex-shrink-0 flex-col bg-[#1a1614] transition-all duration-300 lg:w-[240px]">
@@ -61,7 +64,7 @@ export default function Sidebar({ operadorNome, onLogout }: SidebarProps) {
 
       {/* ---- navigation ---- */}
       <nav className="mt-4 flex flex-1 flex-col gap-1 px-3">
-        {navItems.map((item) => {
+        {itensVisiveis.map((item) => {
           const isActive =
             pathname === item.href ||
             (pathname?.startsWith(item.href + "/") ?? false);
@@ -119,6 +122,9 @@ export default function Sidebar({ operadorNome, onLogout }: SidebarProps) {
         <div className="hidden min-w-0 flex-1 lg:block">
           <p className="truncate text-sm font-medium text-white/80">
             {operadorNome}
+          </p>
+          <p className="text-xs text-white/30 mt-0.5">
+            {perfil === "ADMIN" ? "Administrador" : "Operador"}
           </p>
         </div>
 

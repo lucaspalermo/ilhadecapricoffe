@@ -54,7 +54,7 @@ export default function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
-      <Sidebar operadorNome={operador.nome} onLogout={handleLogout} />
+      <Sidebar operadorNome={operador.nome} perfil={operador.perfil} onLogout={handleLogout} />
 
       <main className="flex-1 overflow-auto bg-[#faf9f7]">
         {children}

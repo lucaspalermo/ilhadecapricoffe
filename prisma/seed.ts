@@ -9,23 +9,25 @@ async function main() {
   // Operadores
   const admin = await prisma.operador.upsert({
     where: { id: 1 },
-    update: {},
+    update: { perfil: "ADMIN" },
     create: {
       nome: "Admin",
       pin: hashSync("1234", 10),
+      perfil: "ADMIN",
     },
   });
 
   const operador2 = await prisma.operador.upsert({
     where: { id: 2 },
-    update: {},
+    update: { perfil: "OPERADOR" },
     create: {
       nome: "Maria",
       pin: hashSync("5678", 10),
+      perfil: "OPERADOR",
     },
   });
 
-  console.log(`Operadores criados: ${admin.nome} (PIN: 1234), ${operador2.nome} (PIN: 5678)`);
+  console.log(`Operadores criados: ${admin.nome} (PIN: 1234, ADMIN), ${operador2.nome} (PIN: 5678, OPERADOR)`);
 
   // Categorias
   const cafes = await prisma.categoria.upsert({

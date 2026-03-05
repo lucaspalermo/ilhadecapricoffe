@@ -18,9 +18,12 @@ export type StatusPedidoDelivery = "NOVO" | "ACEITO" | "EM_PREPARO" | "PRONTO" |
 
 export type Plataforma = "IFOOD" | "KEETA" | "99FOOD";
 
+export type PerfilOperador = "ADMIN" | "OPERADOR";
+
 export interface OperadorLogado {
   id: number;
   nome: string;
+  perfil: PerfilOperador;
 }
 
 export interface CaixaAberto {
