@@ -27,7 +27,7 @@ const navItems = [
   { href: "/caixa",      label: "Caixa",      icon: Wallet,       perfis: ["ADMIN", "OPERADOR"] },
   { href: "/estoque",    label: "Estoque",    icon: Boxes,        perfis: ["ADMIN", "OPERADOR"] },
   { href: "/pedidos",    label: "Delivery",   icon: Truck,        perfis: ["ADMIN", "OPERADOR"] },
-  { href: "/produtos",   label: "Produtos",   icon: Package,      perfis: ["ADMIN"] },
+  { href: "/produtos",   label: "Produtos",   icon: Package,      perfis: ["ADMIN", "OPERADOR"] },
   { href: "/financeiro", label: "Financeiro", icon: DollarSign,   perfis: ["ADMIN"] },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3,    perfis: ["ADMIN"] },
   { href: "/importar",   label: "Importar",   icon: Upload,       perfis: ["ADMIN"] },
