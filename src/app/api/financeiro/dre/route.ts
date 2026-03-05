@@ -39,7 +39,23 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const receitaTotal = vendas.reduce((acc, v) => acc + v.total, 0);
+    const receitaVendas = vendas.reduce((acc, v) => acc + v.total, 0);
+
+    // Receita histórica importada das planilhas (meses anteriores ao sistema)
+    const catReceitaHistorica = await prisma.categoriaFinanceira.findMany({
+      where: { tipo: "RECEITA" },
+      include: {
+        lancamentos: {
+          where: { mesReferencia: mesNum, anoReferencia: anoNum },
+          select: { valor: true },
+        },
+      },
+    });
+    const receitaHistorica = catReceitaHistorica.reduce(
+      (acc, cat) => acc + cat.lancamentos.reduce((a, l) => a + l.valor, 0),
+      0
+    );
+    const receitaTotal = receitaVendas + receitaHistorica;
 
     const porFormaPagamento = {
       DINHEIRO: 0,
