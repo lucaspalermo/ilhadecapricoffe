@@ -14,6 +14,7 @@ import {
   Boxes,
   DollarSign,
   BarChart3,
+  TrendingUp,
 } from "lucide-react";
 import type { PerfilOperador } from "@/types";
 
@@ -24,6 +25,7 @@ interface SidebarProps {
 }
 
 const navItems = [
+  { href: "/hoje",       label: "Hoje",       icon: TrendingUp,   perfis: ["ADMIN", "OPERADOR"] },
   { href: "/pdv",        label: "PDV",        icon: ShoppingCart, perfis: ["ADMIN", "OPERADOR"] },
   { href: "/caixa",      label: "Caixa",      icon: Wallet,       perfis: ["ADMIN", "OPERADOR"] },
   { href: "/estoque",    label: "Estoque",    icon: Boxes,        perfis: ["ADMIN", "OPERADOR"] },
