@@ -36,6 +36,8 @@ interface Produto {
   nome: string;
   descricao: string | null;
   preco: number;
+  custoUnitario: number;
+  estoqueMinimo: number;
   imagem: string | null;
   ativo: boolean;
   categoriaId: number;
@@ -58,6 +60,8 @@ export default function ProdutosPage() {
   // Form state
   const [nome, setNome] = useState("");
   const [preco, setPreco] = useState("");
+  const [custo, setCusto] = useState("");
+  const [estoqueMin, setEstoqueMin] = useState("5");
   const [categoriaId, setCategoriaId] = useState("");
   const [descricao, setDescricao] = useState("");
   const [catNome, setCatNome] = useState("");
@@ -89,6 +93,8 @@ export default function ProdutosPage() {
     setEditingProduct(null);
     setNome("");
     setPreco("");
+    setCusto("");
+    setEstoqueMin("5");
     setCategoriaId("");
     setDescricao("");
     setShowForm(true);
@@ -98,6 +104,8 @@ export default function ProdutosPage() {
     setEditingProduct(p);
     setNome(p.nome);
     setPreco(String(p.preco));
+    setCusto(p.custoUnitario > 0 ? String(p.custoUnitario) : "");
+    setEstoqueMin(String(p.estoqueMinimo));
     setCategoriaId(String(p.categoriaId));
     setDescricao(p.descricao || "");
     setShowForm(true);
@@ -110,16 +118,20 @@ export default function ProdutosPage() {
     }
 
     try {
+      const payload = {
+        nome,
+        preco: parseFloat(preco),
+        custoUnitario: custo ? parseFloat(custo) : 0,
+        estoqueMinimo: estoqueMin ? parseInt(estoqueMin) : 5,
+        categoriaId: parseInt(categoriaId),
+        descricao: descricao || null,
+      };
+
       if (editingProduct) {
         const res = await fetch(`/api/produtos/${editingProduct.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nome,
-            preco: parseFloat(preco),
-            categoriaId: parseInt(categoriaId),
-            descricao: descricao || null,
-          }),
+          body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error();
         toast.success("Produto atualizado!");
@@ -127,12 +139,7 @@ export default function ProdutosPage() {
         const res = await fetch("/api/produtos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nome,
-            preco: parseFloat(preco),
-            categoriaId: parseInt(categoriaId),
-            descricao: descricao || null,
-          }),
+          body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error();
         toast.success("Produto criado!");
@@ -261,9 +268,19 @@ export default function ProdutosPage() {
                       {produto.categoria.nome}
                     </Badge>
                   </div>
-                  <span className="text-lg font-bold text-amber-700 whitespace-nowrap bg-amber-50 px-3 py-1 rounded-xl">
-                    R$ {produto.preco.toFixed(2)}
-                  </span>
+                  <div className="text-right">
+                    <span className="text-lg font-bold text-amber-700 whitespace-nowrap bg-amber-50 px-3 py-1 rounded-xl block">
+                      R$ {produto.preco.toFixed(2)}
+                    </span>
+                    {produto.custoUnitario > 0 && (
+                      <span className="text-xs text-gray-400 mt-1 block">
+                        Custo R$ {produto.custoUnitario.toFixed(2)} &middot;{" "}
+                        <span className="text-emerald-600 font-medium">
+                          {(((produto.preco - produto.custoUnitario) / produto.preco) * 100).toFixed(1)}% margem
+                        </span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="px-5 pb-5">
@@ -331,14 +348,43 @@ export default function ProdutosPage() {
                 className="rounded-xl"
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Preco de Venda (R$) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={preco}
+                  onChange={(e) => setPreco(e.target.value)}
+                  placeholder="Ex: 5.50"
+                  className="rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Custo (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={custo}
+                  onChange={(e) => setCusto(e.target.value)}
+                  placeholder="Ex: 2.00"
+                  className="rounded-xl"
+                />
+              </div>
+            </div>
+            {preco && custo && parseFloat(preco) > 0 && parseFloat(custo) > 0 && (
+              <p className="text-xs text-emerald-600 font-medium -mt-2">
+                Margem: {(((parseFloat(preco) - parseFloat(custo)) / parseFloat(preco)) * 100).toFixed(1)}%
+              </p>
+            )}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">Preco (R$) *</Label>
+              <Label className="text-sm font-medium text-gray-700">Estoque Minimo</Label>
               <Input
                 type="number"
-                step="0.01"
-                value={preco}
-                onChange={(e) => setPreco(e.target.value)}
-                placeholder="Ex: 5.50"
+                min="0"
+                value={estoqueMin}
+                onChange={(e) => setEstoqueMin(e.target.value)}
+                placeholder="Ex: 5"
                 className="rounded-xl"
               />
             </div>

@@ -51,10 +51,12 @@ model Produto {
   id          Int     @id @default(autoincrement())
   nome        String
   descricao   String?
-  preco       Float
-  imagem      String?
-  ativo       Boolean @default(true)
-  estoque     Int     @default(0)
+  preco         Float
+  custoUnitario Float   @default(0)
+  imagem        String?
+  ativo         Boolean @default(true)
+  estoque       Int     @default(0)
+  estoqueMinimo Int     @default(5)
 
   categoriaId Int
   categoria   Categoria @relation(fields: [categoriaId], references: [id])

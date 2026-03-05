@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Coffee,
   ShoppingCart,
@@ -46,6 +47,21 @@ function getInitials(name: string): string {
 export default function Sidebar({ operadorNome, perfil, onLogout }: SidebarProps) {
   const pathname = usePathname();
   const itensVisiveis = navItems.filter((item) => item.perfis.includes(perfil));
+  const [alertCount, setAlertCount] = useState(0);
+
+  useEffect(() => {
+    const fetchAlertas = async () => {
+      try {
+        const res = await fetch("/api/estoque/alertas");
+        if (!res.ok) return;
+        const data = await res.json();
+        setAlertCount(data.count ?? 0);
+      } catch { /* silencioso */ }
+    };
+    fetchAlertas();
+    const interval = setInterval(fetchAlertas, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <aside className="flex h-screen w-[72px] flex-shrink-0 flex-col bg-[#1a1614] transition-all duration-300 lg:w-[240px]">
@@ -95,7 +111,7 @@ export default function Sidebar({ operadorNome, perfil, onLogout }: SidebarProps
               />
 
               <span
-                className={`hidden text-sm font-medium transition-colors duration-200 lg:block ${
+                className={`hidden flex-1 text-sm font-medium transition-colors duration-200 lg:block ${
                   isActive
                     ? "text-white"
                     : "text-white/50 group-hover:text-white/80"
@@ -103,6 +119,13 @@ export default function Sidebar({ operadorNome, perfil, onLogout }: SidebarProps
               >
                 {item.label}
               </span>
+
+              {/* Badge de alerta de estoque */}
+              {item.href === "/estoque" && alertCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                  {alertCount > 99 ? "99+" : alertCount}
+                </span>
+              )}
             </Link>
           );
         })}

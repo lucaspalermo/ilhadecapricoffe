@@ -26,6 +26,25 @@ export interface OperadorLogado {
   perfil: PerfilOperador;
 }
 
+export interface ItemVendaResponse {
+  id: number;
+  produtoId: number;
+  quantidade: number;
+  precoUnitario: number;
+  subtotal: number;
+  produto: { nome: string };
+}
+
+export interface VendaResponse {
+  id: number;
+  total: number;
+  formaPagamento: FormaPagamento;
+  origem: OrigemVenda;
+  createdAt: string;
+  itens: ItemVendaResponse[];
+  operador: { nome: string };
+}
+
 export interface CaixaAberto {
   id: number;
   operadorId: number;

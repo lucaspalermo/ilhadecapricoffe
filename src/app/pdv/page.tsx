@@ -7,11 +7,13 @@ import Cart from "@/components/pdv/Cart";
 import PaymentModal from "@/components/pdv/PaymentModal";
 import { Badge } from "@/components/ui/badge";
 import { Store, CheckCircle, XCircle } from "lucide-react";
+import ReceiptModal from "@/components/pdv/ReceiptModal";
 import type {
   ItemCarrinho,
   FormaPagamento,
   OperadorLogado,
   CaixaAberto,
+  VendaResponse,
 } from "@/types";
 
 interface Produto {
@@ -33,6 +35,7 @@ export default function PdvPage() {
   const [itens, setItens] = useState<ItemCarrinho[]>([]);
   const [showPayment, setShowPayment] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [vendaCupom, setVendaCupom] = useState<VendaResponse | null>(null);
   const [caixa, setCaixa] = useState<CaixaAberto | null>(null);
   const [operador, setOperador] = useState<OperadorLogado | null>(null);
 
@@ -155,9 +158,11 @@ export default function PdvPage() {
         return;
       }
 
+      const data: VendaResponse = await res.json();
       toast.success(`Venda de R$ ${total.toFixed(2)} registrada!`);
       setItens([]);
       setShowPayment(false);
+      setVendaCupom(data);
     } catch {
       toast.error("Erro ao registrar venda");
     } finally {
@@ -240,6 +245,13 @@ export default function PdvPage() {
         onConfirm={handlePayment}
         loading={loading}
       />
+
+      {vendaCupom && (
+        <ReceiptModal
+          venda={vendaCupom}
+          onClose={() => setVendaCupom(null)}
+        />
+      )}
     </div>
   );
 }

@@ -18,7 +18,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { nome, descricao, preco, imagem, categoriaId, ativo } = body;
+    const { nome, descricao, preco, custoUnitario, estoqueMinimo, imagem, categoriaId, ativo } = body;
 
     const produto = await prisma.produto.update({
       where: { id: produtoId },
@@ -26,6 +26,8 @@ export async function PUT(
         ...(nome !== undefined && { nome }),
         ...(descricao !== undefined && { descricao }),
         ...(preco !== undefined && { preco }),
+        ...(custoUnitario !== undefined && { custoUnitario }),
+        ...(estoqueMinimo !== undefined && { estoqueMinimo }),
         ...(imagem !== undefined && { imagem }),
         ...(categoriaId !== undefined && { categoriaId }),
         ...(ativo !== undefined && { ativo }),

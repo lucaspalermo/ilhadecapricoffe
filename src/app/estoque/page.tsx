@@ -27,7 +27,9 @@ import {
   XCircle,
   Hash,
   FileText,
+  FileUp,
 } from "lucide-react";
+import ImportNFe from "@/components/estoque/ImportNFe";
 
 interface Categoria {
   id: number;
@@ -42,6 +44,7 @@ interface ProdutoEstoque {
   imagem: string | null;
   ativo: boolean;
   estoque: number;
+  estoqueMinimo: number;
   categoriaId: number;
   categoria: Categoria;
 }
@@ -61,6 +64,9 @@ export default function EstoquePage() {
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const [alertas, setAlertas] = useState<{ id: number; nome: string; estoque: number; estoqueMinimo: number }[]>([]);
+  const [showNFe, setShowNFe] = useState(false);
 
   // Add stock dialog state
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -91,9 +97,18 @@ export default function EstoquePage() {
     }
   };
 
+  const loadAlertas = async () => {
+    try {
+      const res = await fetch("/api/estoque/alertas");
+      if (!res.ok) return;
+      const data = await res.json();
+      setAlertas(data.produtos ?? []);
+    } catch { /* silencioso */ }
+  };
+
   const loadData = async () => {
     setLoading(true);
-    await Promise.all([loadProdutos(), loadMovimentacoes()]);
+    await Promise.all([loadProdutos(), loadMovimentacoes(), loadAlertas()]);
     setLoading(false);
   };
 
@@ -105,7 +120,7 @@ export default function EstoquePage() {
     p.nome.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getStockStatus = (estoque: number): { label: string; color: string; bgColor: string; borderColor: string; icon: React.ReactNode } => {
+  const getStockStatus = (estoque: number, estoqueMinimo: number): { label: string; color: string; bgColor: string; borderColor: string; icon: React.ReactNode } => {
     if (estoque === 0) {
       return {
         label: "Zerado",
@@ -115,7 +130,7 @@ export default function EstoquePage() {
         icon: <XCircle className="w-3 h-3" />,
       };
     }
-    if (estoque < 10) {
+    if (estoque <= estoqueMinimo) {
       return {
         label: "Baixo",
         color: "text-yellow-700",
@@ -188,7 +203,7 @@ export default function EstoquePage() {
   return (
     <div className="p-6 animate-fade-in-up">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20">
             <Boxes className="w-5 h-5" />
@@ -204,7 +219,37 @@ export default function EstoquePage() {
             </p>
           </div>
         </div>
+        <Button
+          onClick={() => setShowNFe(true)}
+          variant="outline"
+          className="rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+        >
+          <FileUp className="w-4 h-4 mr-2" />
+          Importar NF-e
+        </Button>
       </div>
+
+      {/* Alert Banner */}
+      {alertas.length > 0 && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <span className="font-semibold text-amber-800">
+              {alertas.length} produto{alertas.length !== 1 ? "s" : ""} com estoque abaixo do mínimo
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {alertas.map((p) => (
+              <span
+                key={p.id}
+                className="text-xs bg-amber-100 text-amber-800 border border-amber-200 rounded-lg px-2.5 py-1 font-medium"
+              >
+                {p.nome} — {p.estoque}/{p.estoqueMinimo}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search Input */}
       <div className="relative max-w-md mb-8">
@@ -226,7 +271,7 @@ export default function EstoquePage() {
       ) : filteredProdutos.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
           {filteredProdutos.map((produto, index) => {
-            const status = getStockStatus(produto.estoque);
+            const status = getStockStatus(produto.estoque, produto.estoqueMinimo);
 
             return (
               <Card
@@ -270,9 +315,14 @@ export default function EstoquePage() {
                         </p>
                       </div>
                     </div>
-                    <span className="text-sm font-medium text-amber-700 bg-amber-50 px-3 py-1 rounded-xl">
-                      R$ {produto.preco.toFixed(2)}
-                    </span>
+                    <div className="text-right">
+                      <span className="text-sm font-medium text-amber-700 bg-amber-50 px-3 py-1 rounded-xl block">
+                        R$ {produto.preco.toFixed(2)}
+                      </span>
+                      <span className="text-xs text-gray-400 mt-1 block">
+                        Mín: {produto.estoqueMinimo}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Add stock button */}
@@ -400,6 +450,14 @@ export default function EstoquePage() {
           )}
         </div>
       </div>
+
+      {/* NF-e Import Modal */}
+      <ImportNFe
+        open={showNFe}
+        onClose={() => setShowNFe(false)}
+        produtos={produtos.map((p) => ({ id: p.id, nome: p.nome }))}
+        onImported={loadData}
+      />
 
       {/* Dialog - Add Stock Entry */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
