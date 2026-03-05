@@ -1,6 +1,22 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  ReferenceLine,
+} from "recharts";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +81,19 @@ interface Lancamento {
   };
 }
 
+interface MesAnual {
+  mes: number;
+  receita: number;
+  despesa: number;
+  resultado: number;
+}
+
+interface DREAnual {
+  ano: number;
+  meses: MesAnual[];
+  anosDisponiveis: number[];
+}
+
 interface DREData {
   receita: {
     total: number;
@@ -95,6 +124,14 @@ const formatBRL = (value: number) =>
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString("pt-BR");
+
+const PIE_COLORS = [
+  "#f59e0b", "#ef4444", "#3b82f6", "#10b981", "#8b5cf6",
+  "#f97316", "#06b6d4", "#ec4899", "#84cc16", "#6366f1",
+  "#14b8a6", "#a855f7", "#fb923c",
+];
+
+const MESES_ABREV = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
 const MESES = [
   "Janeiro",
@@ -139,6 +176,11 @@ export default function FinanceiroPage() {
   const [dre, setDre] = useState<DREData | null>(null);
   const [loadingDRE, setLoadingDRE] = useState(true);
 
+  // Progressão anual
+  const [dreAnual, setDreAnual] = useState<DREAnual | null>(null);
+  const [anoAnual, setAnoAnual] = useState(new Date().getFullYear());
+  const [loadingAnual, setLoadingAnual] = useState(true);
+
   // Dialog state
   const [showDialog, setShowDialog] = useState(false);
   const [editingLanc, setEditingLanc] = useState<Lancamento | null>(null);
@@ -178,6 +220,20 @@ export default function FinanceiroPage() {
     }
   }, [mes, ano]);
 
+  const loadAnual = useCallback(async () => {
+    setLoadingAnual(true);
+    try {
+      const res = await fetch(`/api/financeiro/anual?ano=${anoAnual}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setDreAnual(data);
+    } catch {
+      toast.error("Erro ao carregar progressão anual");
+    } finally {
+      setLoadingAnual(false);
+    }
+  }, [anoAnual]);
+
   const loadDRE = useCallback(async () => {
     setLoadingDRE(true);
     try {
@@ -200,6 +256,10 @@ export default function FinanceiroPage() {
     loadLancamentos();
     loadDRE();
   }, [loadLancamentos, loadDRE]);
+
+  useEffect(() => {
+    loadAnual();
+  }, [loadAnual]);
 
   // ── Month Navigation ──
 
@@ -325,6 +385,32 @@ export default function FinanceiroPage() {
   const totalReceitas = lancamentos
     .filter((l) => l.categoriaFinanceira.tipo === "RECEITA")
     .reduce((sum, l) => sum + l.valor, 0);
+
+  // Pie data de despesas do mês atual
+  const pieData = useMemo(() => {
+    if (!dre) return [];
+    return dre.despesas
+      .filter((d) => d.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .map((d) => ({ name: d.categoria, value: d.total }));
+  }, [dre]);
+
+  // Dados do gráfico anual (só meses com dados)
+  const anualChartData = useMemo(() => {
+    if (!dreAnual) return [];
+    return dreAnual.meses
+      .filter((m) => m.receita > 0 || m.despesa > 0)
+      .map((m) => ({
+        mes: MESES_ABREV[m.mes - 1],
+        Receita: Math.round(m.receita * 100) / 100,
+        Despesa: Math.round(m.despesa * 100) / 100,
+        Resultado: Math.round(m.resultado * 100) / 100,
+      }));
+  }, [dreAnual]);
+
+  const totalAnualReceita = useMemo(() => dreAnual?.meses.reduce((s, m) => s + m.receita, 0) ?? 0, [dreAnual]);
+  const totalAnualDespesa = useMemo(() => dreAnual?.meses.reduce((s, m) => s + m.despesa, 0) ?? 0, [dreAnual]);
+  const totalAnualResultado = totalAnualReceita - totalAnualDespesa;
 
   // ── Render ──
 
@@ -521,6 +607,89 @@ export default function FinanceiroPage() {
 
         {/* ═══════════════════════════ Tab: DRE ═══════════════════════════ */}
         <TabsContent value="dre">
+
+          {/* ── PROGRESSÃO ANUAL ── */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-amber-500" />
+                Progressão Anual
+              </h2>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg"
+                  onClick={() => setAnoAnual((a) => a - 1)}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm font-bold text-gray-700 w-12 text-center">{anoAnual}</span>
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg"
+                  onClick={() => setAnoAnual((a) => a + 1)}
+                  disabled={anoAnual >= new Date().getFullYear()}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* KPI cards do ano */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <Card className="rounded-2xl border-green-100 bg-gradient-to-br from-green-50 to-emerald-50 shadow-sm">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs text-green-600 font-medium mb-1">Receita {anoAnual}</p>
+                  <p className="text-lg font-bold text-green-700">{formatBRL(totalAnualReceita)}</p>
+                </CardContent>
+              </Card>
+              <Card className="rounded-2xl border-red-100 bg-gradient-to-br from-red-50 to-rose-50 shadow-sm">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs text-red-600 font-medium mb-1">Despesas {anoAnual}</p>
+                  <p className="text-lg font-bold text-red-700">{formatBRL(totalAnualDespesa)}</p>
+                </CardContent>
+              </Card>
+              <Card className={`rounded-2xl shadow-sm ${totalAnualResultado >= 0 ? "border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50" : "border-red-100 bg-gradient-to-br from-red-50 to-rose-50"}`}>
+                <CardContent className="py-3 px-4">
+                  <p className={`text-xs font-medium mb-1 ${totalAnualResultado >= 0 ? "text-amber-600" : "text-red-600"}`}>
+                    Resultado {anoAnual}
+                  </p>
+                  <p className={`text-lg font-bold ${totalAnualResultado >= 0 ? "text-amber-700" : "text-red-700"}`}>
+                    {formatBRL(totalAnualResultado)}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {loadingAnual ? (
+              <div className="flex items-center justify-center h-48 bg-gray-50 rounded-2xl">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+              </div>
+            ) : anualChartData.length === 0 ? (
+              <div className="flex items-center justify-center h-48 bg-gray-50 rounded-2xl text-gray-400 text-sm">
+                Nenhum dado para {anoAnual}
+              </div>
+            ) : (
+              <Card className="rounded-2xl border-gray-100 shadow-sm">
+                <CardContent className="pt-5 pb-3 pr-4 pl-2">
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={anualChartData} barGap={2} barCategoryGap="25%">
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                      <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false}
+                        tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} width={48} />
+                      <Tooltip
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+formatter={(value: any, name: any) => [formatBRL(Number(value ?? 0)), String(name ?? "")]}
+                        contentStyle={{ borderRadius: 12, border: "1px solid #e5e7eb", fontSize: 12 }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <ReferenceLine y={0} stroke="#e5e7eb" />
+                      <Bar dataKey="Receita" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Despesa" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Resultado" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* ── DRE DO MÊS ── */}
           {loadingDRE ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent mb-4" />
@@ -668,6 +837,51 @@ export default function FinanceiroPage() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* ── PIZZA DE DESPESAS ── */}
+              {pieData.length > 0 && (
+                <Card className="rounded-2xl border-gray-100 shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold text-gray-700">Distribuição de Despesas</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pb-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <ResponsiveContainer width={180} height={180}>
+                        <PieChart>
+                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                            dataKey="value" paddingAngle={2}>
+                            {pieData.map((_, i) => (
+                              <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+formatter={(value: any, name: any) => [formatBRL(Number(value ?? 0)), String(name ?? "")]}
+                            contentStyle={{ borderRadius: 10, fontSize: 11, border: "1px solid #e5e7eb" }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="flex-1 space-y-1.5 w-full">
+                        {pieData.map((entry, i) => {
+                          const pct = dre ? (entry.value / dre.despesas.reduce((s, d) => s + d.total, 0) * 100).toFixed(1) : "0";
+                          return (
+                            <div key={i} className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                                <span className="text-xs text-gray-600 truncate">{entry.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="text-xs text-gray-400">{pct}%</span>
+                                <span className="text-xs font-semibold text-gray-800">{formatBRL(entry.value)}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* ── RESULTADO ── */}
               <Card
