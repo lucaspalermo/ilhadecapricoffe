@@ -10,6 +10,7 @@ import {
   Minus,
   Plus,
   CheckCircle,
+  Loader2,
 } from "lucide-react";
 import type { ItemCarrinho } from "@/types";
 
@@ -19,6 +20,7 @@ interface CartProps {
   onRemove: (produtoId: number) => void;
   onClear: () => void;
   onFinalize: () => void;
+  loading?: boolean;
 }
 
 export default function Cart({
@@ -27,6 +29,7 @@ export default function Cart({
   onRemove,
   onClear,
   onFinalize,
+  loading = false,
 }: CartProps) {
   const total = itens.reduce((sum, item) => sum + item.subtotal, 0);
 
@@ -164,11 +167,15 @@ export default function Cart({
             disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none
             disabled:from-gray-300 disabled:to-gray-400
           "
-          disabled={itens.length === 0}
+          disabled={itens.length === 0 || loading}
           onClick={onFinalize}
         >
-          <CheckCircle className="w-5 h-5" />
-          Finalizar Venda
+          {loading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <CheckCircle className="w-5 h-5" />
+          )}
+          {loading ? "Registrando..." : "Finalizar Venda"}
         </button>
       </div>
     </div>

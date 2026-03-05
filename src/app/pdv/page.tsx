@@ -225,6 +225,7 @@ export default function PdvPage() {
           onRemove={removeItem}
           onClear={() => setItens([])}
           onFinalize={() => setShowPayment(true)}
+          loading={loading}
         />
       </div>
 

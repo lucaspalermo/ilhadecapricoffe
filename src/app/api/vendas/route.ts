@@ -100,6 +100,20 @@ export async function POST(request: NextRequest) {
 
       // Deduzir estoque de cada produto vendido
       for (const item of itens as { produtoId: number; quantidade: number }[]) {
+        const produto = await tx.produto.findUnique({
+          where: { id: item.produtoId },
+          select: { nome: true, estoque: true },
+        });
+
+        if (!produto) {
+          throw new Error(`Produto #${item.produtoId} nao encontrado`);
+        }
+        if (produto.estoque < item.quantidade) {
+          throw new Error(
+            `Estoque insuficiente para "${produto.nome}". Disponivel: ${produto.estoque}, Solicitado: ${item.quantidade}`
+          );
+        }
+
         await tx.produto.update({
           where: { id: item.produtoId },
           data: { estoque: { decrement: item.quantidade } },
@@ -120,10 +134,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(venda, { status: 201 });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro ao criar venda";
     console.error("Erro ao criar venda:", error);
-    return NextResponse.json(
-      { error: "Erro ao criar venda" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

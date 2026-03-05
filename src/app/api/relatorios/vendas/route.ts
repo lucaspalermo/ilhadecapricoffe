@@ -99,10 +99,12 @@ export async function GET(request: NextRequest) {
     });
 
     const produtoIds = topProdutosRaw.map((item) => item.produtoId);
-    const produtos = await prisma.produto.findMany({
-      where: { id: { in: produtoIds } },
-      select: { id: true, nome: true },
-    });
+    const [produtos] = await Promise.all([
+      prisma.produto.findMany({
+        where: { id: { in: produtoIds } },
+        select: { id: true, nome: true },
+      }),
+    ]);
 
     const produtoNomeMap = new Map(produtos.map((p) => [p.id, p.nome]));
 
