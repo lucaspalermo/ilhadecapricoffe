@@ -761,7 +761,7 @@ export default function FinanceiroPage() {
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categorias.map((cat) => (
+                  {categorias.filter((cat) => cat.tipo === "DESPESA").map((cat) => (
                     <SelectItem key={cat.id} value={String(cat.id)}>
                       {cat.nome}
                     </SelectItem>
