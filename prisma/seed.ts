@@ -21,7 +21,11 @@ async function main() {
 
   console.log(`Operadores: ${admin.nome} (PIN: 2262), ${operador2.nome} (PIN: 1234)`);
 
-  // Limpa produtos e categorias para re-seed limpo
+  // Limpa em ordem para respeitar FK constraints
+  await prisma.movimentacaoEstoque.deleteMany({});
+  await prisma.itemVenda.deleteMany({});
+  await prisma.venda.deleteMany({});
+  await prisma.pedidoDelivery.deleteMany({});
   await prisma.produto.deleteMany({});
   await prisma.categoria.deleteMany({});
 
