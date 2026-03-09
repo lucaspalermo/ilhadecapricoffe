@@ -28,6 +28,7 @@ import {
   Hash,
   FileText,
   FileUp,
+  Trash2,
 } from "lucide-react";
 import ImportNFe from "@/components/estoque/ImportNFe";
 
@@ -70,6 +71,7 @@ export default function EstoquePage() {
 
   // Add stock dialog state
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showLossDialog, setShowLossDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProdutoEstoque | null>(null);
   const [quantidade, setQuantidade] = useState("");
   const [observacao, setObservacao] = useState("");
@@ -155,7 +157,14 @@ export default function EstoquePage() {
     setShowAddDialog(true);
   };
 
-  const handleSaveEntry = async () => {
+  const openLossDialog = (produto: ProdutoEstoque) => {
+    setSelectedProduct(produto);
+    setQuantidade("");
+    setObservacao("");
+    setShowLossDialog(true);
+  };
+
+  const handleSaveMovimento = async (tipo: "ENTRADA" | "SAIDA") => {
     if (!selectedProduct || !quantidade) {
       toast.error("Informe a quantidade");
       return;
@@ -175,24 +184,31 @@ export default function EstoquePage() {
         body: JSON.stringify({
           produtoId: selectedProduct.id,
           quantidade: qty,
+          tipo,
           observacao: observacao.trim() || null,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error || "Erro ao registrar entrada");
+        toast.error(data.error || `Erro ao registrar ${tipo === "ENTRADA" ? "entrada" : "perda"}`);
         return;
       }
 
-      toast.success(`Entrada de ${qty} unidade(s) de "${selectedProduct.nome}" registrada!`);
-      setShowAddDialog(false);
+      if (tipo === "ENTRADA") {
+        toast.success(`Entrada de ${qty} unidade(s) de "${selectedProduct.nome}" registrada!`);
+        setShowAddDialog(false);
+      } else {
+        toast.success(`Perda de ${qty} unidade(s) de "${selectedProduct.nome}" registrada!`);
+        setShowLossDialog(false);
+      }
+
       setSelectedProduct(null);
       setQuantidade("");
       setObservacao("");
       loadData();
     } catch {
-      toast.error("Erro ao registrar entrada de estoque");
+      toast.error("Erro ao registrar movimentação de estoque");
     } finally {
       setSaving(false);
     }
@@ -325,15 +341,25 @@ export default function EstoquePage() {
                     </div>
                   </div>
 
-                  {/* Add stock button */}
-                  <Button
-                    size="sm"
-                    onClick={() => openAddDialog(produto)}
-                    className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/25 transition-all duration-200 press-scale"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1.5" />
-                    Entrada de Estoque
-                  </Button>
+                  {/* Buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => openAddDialog(produto)}
+                      className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/25 transition-all duration-200 press-scale text-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      Entrada
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => openLossDialog(produto)}
+                      className="flex-1 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg shadow-red-500/25 transition-all duration-200 press-scale text-xs"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      Perda
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -451,6 +477,104 @@ export default function EstoquePage() {
         </div>
       </div>
 
+      {/* Dialog - Registrar Perda */}
+      <Dialog open={showLossDialog} onOpenChange={setShowLossDialog}>
+        <DialogContent className="rounded-2xl sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white">
+                <Trash2 className="w-4 h-4" />
+              </div>
+              <DialogTitle className="text-lg">Registrar Perda</DialogTitle>
+            </div>
+          </DialogHeader>
+          <div className="space-y-5 mt-2">
+            {/* Product info */}
+            <div className="bg-gradient-to-br from-red-50 to-rose-50 p-4 rounded-xl border border-red-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Produto
+              </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                    <Boxes className="w-4 h-4 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{selectedProduct?.nome}</p>
+                    <p className="text-xs text-gray-500">{selectedProduct?.categoria.nome}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Estoque atual</p>
+                  <p className="font-bold text-gray-900 text-lg">{selectedProduct?.estoque ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quantity */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Quantidade perdida *</Label>
+              <div className="relative">
+                <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={quantidade}
+                  onChange={(e) => setQuantidade(e.target.value)}
+                  placeholder="Ex: 5"
+                  className="pl-10 rounded-xl"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Motivo */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Motivo da perda</Label>
+              <div className="relative">
+                <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  value={observacao}
+                  onChange={(e) => setObservacao(e.target.value)}
+                  placeholder="Ex: Produto vencido, queda, etc."
+                  className="pl-10 rounded-xl"
+                />
+              </div>
+            </div>
+
+            {/* Preview */}
+            {quantidade && parseInt(quantidade, 10) > 0 && selectedProduct && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center justify-between">
+                <p className="text-sm text-red-700 font-medium">Estoque após perda:</p>
+                <p className="font-bold text-red-700 text-lg">
+                  {Math.max(0, selectedProduct.estoque - parseInt(quantidade, 10))}
+                </p>
+              </div>
+            )}
+
+            {/* Save */}
+            <Button
+              className="w-full rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg shadow-red-500/25 transition-all duration-200 press-scale h-11 text-sm font-semibold"
+              onClick={() => handleSaveMovimento("SAIDA")}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <ArrowUpFromLine className="w-4 h-4 mr-2" />
+                  Registrar Perda
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* NF-e Import Modal */}
       <ImportNFe
         open={showNFe}
@@ -550,7 +674,7 @@ export default function EstoquePage() {
             {/* Save button */}
             <Button
               className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/25 transition-all duration-200 press-scale h-11 text-sm font-semibold"
-              onClick={handleSaveEntry}
+              onClick={() => handleSaveMovimento("ENTRADA")}
               disabled={saving}
             >
               {saving ? (

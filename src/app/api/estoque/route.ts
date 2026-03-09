@@ -22,11 +22,11 @@ export async function GET() {
   }
 }
 
-// POST /api/estoque - Registra entrada de estoque
+// POST /api/estoque - Registra entrada ou saída (perda) de estoque
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { produtoId, quantidade, observacao } = body;
+    const { produtoId, quantidade, observacao, tipo = "ENTRADA" } = body;
 
     if (!produtoId || !quantidade) {
       return NextResponse.json(
@@ -42,11 +42,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (tipo !== "ENTRADA" && tipo !== "SAIDA") {
+      return NextResponse.json(
+        { error: "tipo deve ser ENTRADA ou SAIDA" },
+        { status: 400 }
+      );
+    }
+
     const resultado = await prisma.$transaction(async (tx) => {
+      // Para SAIDA, valida se há estoque suficiente
+      if (tipo === "SAIDA") {
+        const produto = await tx.produto.findUnique({ where: { id: produtoId } });
+        if (!produto) {
+          throw new Error("Produto não encontrado");
+        }
+        if (produto.estoque < quantidade) {
+          throw new Error(`Estoque insuficiente. Disponível: ${produto.estoque}`);
+        }
+      }
+
       const movimentacao = await tx.movimentacaoEstoque.create({
         data: {
           produtoId,
-          tipo: "ENTRADA",
+          tipo,
           quantidade,
           observacao: observacao ?? null,
         },
@@ -55,11 +73,11 @@ export async function POST(request: NextRequest) {
       const produto = await tx.produto.update({
         where: { id: produtoId },
         data: {
-          estoque: { increment: quantidade },
+          estoque: tipo === "ENTRADA"
+            ? { increment: quantidade }
+            : { decrement: quantidade },
         },
-        include: {
-          categoria: true,
-        },
+        include: { categoria: true },
       });
 
       return { movimentacao, produto };
@@ -67,10 +85,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(resultado, { status: 201 });
   } catch (error) {
-    console.error("Erro ao registrar entrada de estoque:", error);
-    return NextResponse.json(
-      { error: "Erro ao registrar entrada de estoque" },
-      { status: 500 }
-    );
+    const msg = error instanceof Error ? error.message : "Erro ao registrar movimentacao de estoque";
+    console.error("Erro ao registrar movimentacao:", error);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
