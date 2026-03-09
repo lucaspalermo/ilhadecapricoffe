@@ -40,31 +40,37 @@ function ProductButton({
     <button
       onClick={() => onAddItem(produto)}
       className="
-        group relative flex flex-col items-center justify-center
-        p-4 bg-white rounded-2xl
+        group relative flex flex-col items-center
+        p-3 bg-white rounded-2xl w-full
         border border-gray-100
         hover:border-amber-300 hover:shadow-lg
         hover-lift press-scale
         transition-all duration-200
-        min-h-[100px]
         animate-fade-in-up
         focus:outline-none focus:ring-2 focus:ring-amber-400/50
+        text-left
       "
       style={{ animationDelay: `${index * 30}ms` }}
     >
-      <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center mb-2.5 group-hover:bg-amber-100 transition-colors duration-200">
+      {/* Icon */}
+      <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center mb-2 group-hover:bg-amber-100 transition-colors duration-200 flex-shrink-0">
         {produto.imagem ? (
-          <Package className="w-5 h-5 text-amber-600" />
+          <Package className="w-4 h-4 text-amber-600" />
         ) : (
-          <Coffee className="w-5 h-5 text-amber-600" />
+          <Coffee className="w-4 h-4 text-amber-600" />
         )}
       </div>
-      <span className="text-xs font-medium text-gray-800 text-center leading-snug break-words w-full">
+
+      {/* Name — wraps freely, no clamp */}
+      <span className="text-[11px] font-medium text-gray-800 text-center leading-snug w-full whitespace-normal break-words">
         {produto.nome}
       </span>
-      <span className="text-sm font-bold text-amber-700 mt-1.5">
+
+      {/* Price */}
+      <span className="text-xs font-bold text-amber-700 mt-1.5 flex-shrink-0">
         R$ {produto.preco.toFixed(2)}
       </span>
+
       <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-amber-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
     </button>
   );
