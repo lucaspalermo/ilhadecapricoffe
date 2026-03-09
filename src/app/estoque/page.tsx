@@ -298,7 +298,7 @@ export default function EstoquePage() {
                 <CardHeader className="pb-3 pt-5 px-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base font-semibold text-gray-900 truncate">
+                      <CardTitle className="text-sm font-semibold text-gray-900 leading-snug break-words">
                         {produto.nome}
                       </CardTitle>
                       <Badge

@@ -59,7 +59,7 @@ function ProductButton({
           <Coffee className="w-5 h-5 text-amber-600" />
         )}
       </div>
-      <span className="text-sm font-medium text-gray-800 text-center leading-tight line-clamp-2">
+      <span className="text-xs font-medium text-gray-800 text-center leading-snug break-words w-full">
         {produto.nome}
       </span>
       <span className="text-sm font-bold text-amber-700 mt-1.5">
