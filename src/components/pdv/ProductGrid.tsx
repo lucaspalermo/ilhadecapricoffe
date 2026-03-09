@@ -39,35 +39,24 @@ function ProductButton({
   return (
     <button
       onClick={() => onAddItem(produto)}
-      className="
-        group relative flex flex-col items-center
-        p-3 bg-white rounded-2xl w-full
-        border border-gray-100
-        hover:border-amber-300 hover:shadow-lg
-        hover-lift press-scale
-        transition-all duration-200
-        animate-fade-in-up
-        focus:outline-none focus:ring-2 focus:ring-amber-400/50
-        text-left
-      "
+      className="group relative flex flex-col items-center gap-1.5 p-3 bg-white rounded-2xl w-full border border-gray-100 hover:border-amber-300 hover:shadow-lg hover-lift press-scale transition-all duration-200 animate-fade-in-up focus:outline-none focus:ring-2 focus:ring-amber-400/50"
       style={{ animationDelay: `${index * 30}ms` }}
     >
       {/* Icon */}
-      <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center mb-2 group-hover:bg-amber-100 transition-colors duration-200 flex-shrink-0">
-        {produto.imagem ? (
-          <Package className="w-4 h-4 text-amber-600" />
-        ) : (
-          <Coffee className="w-4 h-4 text-amber-600" />
-        )}
+      <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors duration-200 shrink-0">
+        <Coffee className="w-4 h-4 text-amber-600" />
       </div>
 
-      {/* Name — wraps freely, no clamp */}
-      <span className="text-[11px] font-medium text-gray-800 text-center leading-snug w-full whitespace-normal break-words">
+      {/* Name */}
+      <span
+        className="text-xs font-medium text-gray-800 text-center leading-snug"
+        style={{ wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}
+      >
         {produto.nome}
       </span>
 
       {/* Price */}
-      <span className="text-xs font-bold text-amber-700 mt-1.5 flex-shrink-0">
+      <span className="text-xs font-bold text-amber-700 shrink-0">
         R$ {produto.preco.toFixed(2)}
       </span>
 
@@ -190,7 +179,7 @@ export default function ProductGrid({
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 p-4">
                     {filtered.map((produto, index) => (
                       <ProductButton key={produto.id} produto={produto} index={index} onAddItem={onAddItem} />
                     ))}
